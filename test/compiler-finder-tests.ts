@@ -155,4 +155,39 @@ describe('Compiler-finder', () => {
         const libsArr = compilers[0].libsArr;
         expect(libsArr).toEqual(['fmt', 'catch2.2101']);
     });
+
+    it('should sort ex-WINE compilers to the end', () => {
+        // Create test compiler objects with names that include ex-WINE compilers
+        const compilers = [
+            { name: 'x64 msvc v19.0 (ex-WINE)' },
+            { name: 'x64 msvc v19.10 (ex-WINE)' },
+            { name: 'x64 msvc v19.14 (ex-WINE)' },
+            { name: 'x64 msvc v19.latest' },
+            { name: 'x64 msvc v19.43 VS17.13' },
+            { name: 'x64 msvc v19.20 VS16.0' }
+        ];
+
+        const finder = new CompilerFinder({} as any, compilerProps, {} as any, optionsHandler);
+        // Access the private method using bracket notation for testing
+        const sorted = compilers.sort((a, b) => (finder as any).customCompilerSort(a, b));
+        const sortedNames = sorted.map(c => c.name);
+
+        // ex-WINE compilers should be at the end
+        const wineCompilers = sortedNames.filter(name => name.includes('(ex-WINE)'));
+        const nonWineCompilers = sortedNames.filter(name => !name.includes('(ex-WINE)'));
+
+        // All non-WINE compilers should come before all WINE compilers
+        expect(sortedNames.slice(0, nonWineCompilers.length)).toEqual(nonWineCompilers);
+        expect(sortedNames.slice(nonWineCompilers.length)).toEqual(wineCompilers);
+        
+        // Verify specific order - non-WINE first, then WINE compilers
+        expect(sortedNames).toEqual([
+            'x64 msvc v19.20 VS16.0',
+            'x64 msvc v19.43 VS17.13',
+            'x64 msvc v19.latest',
+            'x64 msvc v19.0 (ex-WINE)',
+            'x64 msvc v19.10 (ex-WINE)',
+            'x64 msvc v19.14 (ex-WINE)'
+        ]);
+    });
 });

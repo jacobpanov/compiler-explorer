@@ -568,6 +568,22 @@ export class CompilerFinder {
         }
     }
 
+    /**
+     * Custom compiler sorting that places ex-WINE compilers at the end
+     * while maintaining proper ordering within each group
+     */
+    private customCompilerSort(a: CompilerInfo, b: CompilerInfo): number {
+        const aIsWine = a.name.includes('(ex-WINE)');
+        const bIsWine = b.name.includes('(ex-WINE)');
+
+        // If one is WINE and the other is not, non-WINE comes first
+        if (aIsWine && !bIsWine) return 1;
+        if (!aIsWine && bIsWine) return -1;
+
+        // If both are the same type (both WINE or both non-WINE), use regular sorting
+        return basic_comparator(a.name, b.name);
+    }
+
     async find() {
         this.checkOrphanedProperties();
 
@@ -584,7 +600,7 @@ export class CompilerFinder {
         const result = this.ensureDistinct(compilers);
         return {
             foundClash: result.foundClash,
-            compilers: result.compilers.sort((a, b) => basic_comparator(a.name, b.name)),
+            compilers: result.compilers.sort((a, b) => this.customCompilerSort(a, b)),
         };
     }
 
